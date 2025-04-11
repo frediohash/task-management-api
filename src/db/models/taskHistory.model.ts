@@ -16,8 +16,8 @@ export type ITaskHistory = Omit<z.infer<typeof TaskHistoryZodSchema>, 'taskId' |
   } & Document;
 
 const TaskHistorySchema = new Schema<ITaskHistory>({
-    taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
-    changedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
+  changedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   changeType: { type: String, required: true },
   previousState: { type: Schema.Types.Mixed },
   newState: { type: Schema.Types.Mixed }

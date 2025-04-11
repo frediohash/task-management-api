@@ -16,7 +16,7 @@ export const TaskZodSchema = z.object({
 
 export type ITask = Omit<z.infer<typeof TaskZodSchema>, 'createdBy' | 'assignedTo'> & {
     createdBy: mongoose.Types.ObjectId;
-    assignedTo?: mongoose.Types.ObjectId[];
+    assignedTo: mongoose.Types.ObjectId[];
   } & Document;
 
 const TaskSchema = new Schema<ITask>({

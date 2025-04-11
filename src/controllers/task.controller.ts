@@ -7,6 +7,7 @@ import { NotificationModel } from '../db/models/notification.model';
 import { TaskZodSchema } from '../db/models/task.model';
 import { ApiError } from '../utils/ApiError';
 import { redisClient } from '../config/redis';
+import { UserModel } from '../db/models/user.model';
 
 export const createTask = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -80,102 +81,104 @@ export const getTask = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const task = await TaskModel.findById(req.params.id);
-    if (!task) {
-      throw new ApiError(404, 'Task not found');
-    }
-
-    // Check permissions
-    if (req.user.role !== 'admin' && task.createdBy.toString() !== req.user.id) {
-      throw new ApiError(403, 'Forbidden - Only admin or task creator can update');
-    }
-
-    const previousState = task.toObject();
-    const validatedData = TaskZodSchema.partial().parse(req.body);
-
-    // Check for status change
-    if (validatedData.status && validatedData.status !== task.status) {
-      await TaskHistoryModel.create({
-        taskId: task._id,
-        changedBy: req.user.id,
-        changeType: 'status_change',
-        previousState: { status: task.status },
-        newState: { status: validatedData.status }
-      });
-
-      // Create notifications for assigned users
-      const assignedUsers = await UserTaskModel.find({ taskId: task._id });
-      const notifications = assignedUsers.map(userTask => ({
-        userId: userTask.userId,
-        taskId: task._id,
-        message: `Task status changed from ${task.status} to ${validatedData.status} for task: ${task.title}`,
-        type: 'status_change'
-      }));
-
-      await NotificationModel.insertMany(notifications);
-    }
-
-    // Check for assignment changes
-    if (validatedData.assignedTo) {
+    try {
+      const task = await TaskModel.findById(req.params.id);
+      if (!task) {
+        throw new ApiError(404, 'Task not found');
+      }
+  
+      // Check permissions
+      if (req.user.role !== 'admin' && task.createdBy.toString() !== req.user.id) {
+        throw new ApiError(403, 'Forbidden - Only admin or task creator can update');
+      }
+  
+      const previousState = task.toObject();
+      const validatedData = TaskZodSchema.partial().parse(req.body);
+  
+      // Declare currentAssignments at the function scope
       const currentAssignments = task.assignedTo.map(id => id.toString());
-      const newAssignments = validatedData.assignedTo;
-
-      const added = newAssignments.filter(id => !currentAssignments.includes(id));
-      const removed = currentAssignments.filter(id => !newAssignments.includes(id));
-
-      // Add new assignments
-      if (added.length > 0) {
-        const userTasks = added.map(userId => ({
-          userId,
+  
+      // Check for status change
+      if (validatedData.status && validatedData.status !== task.status) {
+        await TaskHistoryModel.create({
           taskId: task._id,
-          role: 'assignee'
-        }));
-
-        await UserTaskModel.insertMany(userTasks);
-
-        const notifications = added.map(userId => ({
-          userId,
-          taskId: task._id,
-          message: `You have been assigned to task: ${task.title}`,
-          type: 'assignment'
-        }));
-
-        await NotificationModel.insertMany(notifications);
-      }
-
-      // Remove assignments
-      if (removed.length > 0) {
-        await UserTaskModel.deleteMany({
-          userId: { $in: removed },
-          taskId: task._id
+          changedBy: req.user.id,
+          changeType: 'status_change',
+          previousState: { status: task.status },
+          newState: { status: validatedData.status }
         });
-
-        const notifications = removed.map(userId => ({
-          userId,
+  
+        // Create notifications for assigned users
+        const assignedUsers = await UserTaskModel.find({ taskId: task._id });
+        const notifications = assignedUsers.map(userTask => ({
+          userId: userTask.userId,
           taskId: task._id,
-          message: `You have been unassigned from task: ${task.title}`,
-          type: 'assignment'
+          message: `Task status changed from ${task.status} to ${validatedData.status} for task: ${task.title}`,
+          type: 'status_change'
         }));
-
+  
         await NotificationModel.insertMany(notifications);
       }
-    }
-
-    Object.assign(task, validatedData);
-    await task.save();
-
-    // Invalidate cache for user tasks
-    if (validatedData.assignedTo) {
-      for (const userId of [...currentAssignments, ...validatedData.assignedTo]) {
-        await redisClient.del(`user_tasks:${userId}`);
+  
+      // Check for assignment changes
+      if (validatedData.assignedTo) {
+        const newAssignments = validatedData.assignedTo;
+  
+        const added = newAssignments.filter(id => !currentAssignments.includes(id));
+        const removed = currentAssignments.filter(id => !newAssignments.includes(id));
+  
+        // Add new assignments
+        if (added.length > 0) {
+          const userTasks = added.map(userId => ({
+            userId,
+            taskId: task._id,
+            role: 'assignee'
+          }));
+  
+          await UserTaskModel.insertMany(userTasks);
+  
+          const notifications = added.map(userId => ({
+            userId,
+            taskId: task._id,
+            message: `You have been assigned to task: ${task.title}`,
+            type: 'assignment'
+          }));
+  
+          await NotificationModel.insertMany(notifications);
+        }
+  
+        // Remove assignments
+        if (removed.length > 0) {
+          await UserTaskModel.deleteMany({
+            userId: { $in: removed },
+            taskId: task._id
+          });
+  
+          const notifications = removed.map(userId => ({
+            userId,
+            taskId: task._id,
+            message: `You have been unassigned from task: ${task.title}`,
+            type: 'assignment'
+          }));
+  
+          await NotificationModel.insertMany(notifications);
+        }
       }
+  
+      Object.assign(task, validatedData);
+      await task.save();
+  
+      // Invalidate cache for user tasks
+      if (validatedData.assignedTo) {
+        for (const userId of [...currentAssignments, ...validatedData.assignedTo]) {
+          await redisClient.del(`user_tasks:${userId}`);
+        }
+      }
+  
+      res.json(task);
+    } catch (error) {
+      next(error);
     }
-
-    res.json(task);
-  } catch (error) {
-    next(error);
-  }
 };
 
 export const deleteTask = async (req: Request, res: Response, next: NextFunction) => {
