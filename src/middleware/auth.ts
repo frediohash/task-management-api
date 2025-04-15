@@ -3,6 +3,17 @@ import { verifyAccessToken } from '../config/jwt';
 import { UserModel } from '../db/models/user.model';
 import { ApiError } from '../utils/ApiError';
 
+declare global {
+  namespace Express {
+    interface Request {
+      user: {
+        id: string;
+        role: string;
+      };
+    }
+  }
+}
+
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -31,7 +42,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
 export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return next(new ApiError(403, 'Forbidden - Insufficient permissions'));
     }
     next();

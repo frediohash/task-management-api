@@ -7,11 +7,18 @@ export const UserZodSchema = z.object({
   password: z.string().min(8),
   role: z.enum(['admin', 'manager', 'user']).default('user'),
   refreshToken: z.string().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
 });
 
-export type IUser = z.infer<typeof UserZodSchema> & Document;
+export interface IUser extends Document {
+  username: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'manager' | 'user';
+  refreshToken?: string;
+  _id: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const UserSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
@@ -22,8 +29,5 @@ const UserSchema = new Schema<IUser>({
 }, {
   timestamps: true
 });
-
-UserSchema.index({ username: 1 });
-UserSchema.index({ email: 1 });
 
 export const UserModel = mongoose.model<IUser>('User', UserSchema);

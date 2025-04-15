@@ -29,9 +29,9 @@ const config: Config = {
     url: process.env.MONGO_URL || 'mongodb://localhost:27017/task-manager'
   },
   jwt: {
-    accessTokenSecret: process.env.JWT_ACCESS_SECRET || 'access-secret',
-    refreshTokenSecret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
-    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
+    accessTokenSecret: process.env.JWT_ACCESS_SECRET || 'super_secret_key_123',
+    refreshTokenSecret: process.env.JWT_REFRESH_SECRET || 'another_secret_key_456',
+    accessTokenExpiry: process.env.JWT_ACCESS_TOKEN_EXPIRY || '1h',
     refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || '7d'
   },
   redis: {

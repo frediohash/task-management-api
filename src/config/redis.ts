@@ -1,10 +1,14 @@
 import Redis from 'ioredis';
+import { Queue, Worker } from 'bullmq';
 import { config } from './config';
 
-export const redisClient = new Redis(config.redis.url);
+// Create Redis connection with proper BullMQ settings
+export const redisClient = new Redis(config.redis.url, {
+  maxRetriesPerRequest: null, // This is the critical fix
+  enableReadyCheck: false
+});
 
-// BullMQ queue for background jobs
-import { Queue } from 'bullmq';
+// BullMQ Queue setup
 export const taskQueue = new Queue('task-queue', {
   connection: redisClient,
   defaultJobOptions: {
@@ -16,19 +20,14 @@ export const taskQueue = new Queue('task-queue', {
   }
 });
 
-// Worker for processing jobs
-import { Worker } from 'bullmq';
+// Worker setup
 export const taskWorker = new Worker('task-queue', async job => {
   switch (job.name) {
     case 'send-notification':
-      // In a real app, this would send an email or push notification
-      console.log('Sending notification:', job.data);
-      break;
-    case 'cleanup-task':
-      console.log('Cleaning up task:', job.data);
+      console.log('Processing notification:', job.data);
       break;
     default:
-      console.log('Processing unknown job:', job.name);
+      console.log('Processing job:', job.name);
   }
 }, { connection: redisClient });
 
