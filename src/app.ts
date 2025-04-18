@@ -9,6 +9,8 @@ import authRoutes from './routes/auth.routes';
 import { sanitize } from './middleware/sanitize';
 import { config } from './config/config';
 
+
+
 const app = express();
 
 // Connect to MongoDB
@@ -19,6 +21,11 @@ mongoose.connect(config.mongo.url)
 // Connect to Redis
 redisClient.on('connect', () => console.log('Connected to Redis'));
 redisClient.on('error', err => console.error('Redis error:', err));
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 // Middleware
 app.use(helmet());
