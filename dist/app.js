@@ -21,6 +21,10 @@ mongoose_1.default.connect(config_1.config.mongo.url)
 // Connect to Redis
 redis_1.redisClient.on('connect', () => console.log('Connected to Redis'));
 redis_1.redisClient.on('error', err => console.error('Redis error:', err));
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
 // Middleware
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)());
