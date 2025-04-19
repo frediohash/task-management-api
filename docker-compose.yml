@@ -8,7 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - MONGO_URL=mongodb+srv://frediopratama313:QiYPsk7nJnKyWQan@cluster0.h6jtx.mongodb.net/
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://default:SECgeJUcRtERdRuPt2WiL05gr5YHkKEH@redis-10964.c38599.ap-seast-3-mz.ec2.cloud.rlrcp.com:10964
     depends_on:
       - mongo
       - redis
