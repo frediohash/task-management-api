@@ -2,26 +2,37 @@
 import { Request, Response, NextFunction } from 'express';
 import sanitize from 'mongo-sanitize';
 
+// Keep your deepSanitize function and export if needed
 const deepSanitize = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
     return sanitize(obj);
   }
-  
+
   return Object.keys(obj).reduce((acc: any, key) => {
-    acc[sanitize(key)] = deepSanitize(obj[key]);
+    const cleanKey = sanitize(key);
+    acc[cleanKey] = deepSanitize(obj[key]);
     return acc;
   }, Array.isArray(obj) ? [] : {});
 };
 
+// ✅ TEMP: Replace middleware with debug version
 export const sanitizeMiddleware = (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.body) req.body = deepSanitize(req.body);
-    if (req.query) req.query = deepSanitize(req.query);
-    if (req.params) req.params = deepSanitize(req.params);
+    console.log('🔥 Incoming request:', {
+      bodyType: typeof req.body,
+      queryType: typeof req.query,
+      body: req.body,
+      query: req.query,
+      params: req.params
+    });
+
     next();
-  } catch (error) {
-    res.status(500).json({ error: 'Sanitization failed' });
+  } catch (err) {
+    console.error('🔥 Logging error:', err);
+    res.status(500).json({ error: 'Logging failed' });
   }
 };
 
+
+// You can still export the deepSanitize or sanitize function if used elsewhere
 export { sanitize };
