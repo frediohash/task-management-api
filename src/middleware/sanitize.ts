@@ -1,31 +1,27 @@
-import mongoSanitize from 'express-mongo-sanitize';
-import { RequestHandler } from 'express';
+// src/middleware/sanitize.ts
+import { Request, Response, NextFunction } from 'express';
+import sanitize from 'mongo-sanitize';
 
-export const sanitize = (): RequestHandler[] => {
-  return [
-    // Sanitize request data
-    mongoSanitize(),
-    // XSS protection
-    (req, res, next) => {
-      // Sanitize req.body
-      if (req.body) {
-        Object.keys(req.body).forEach(key => {
-          if (typeof req.body[key] === 'string') {
-            req.body[key] = req.body[key].replace(/<[^>]*>?/gm, '');
-          }
-        });
-      }
-      
-      // Sanitize req.query
-      if (req.query) {
-        Object.keys(req.query).forEach(key => {
-          if (typeof req.query[key] === 'string') {
-            req.query[key] = (req.query[key] as string).replace(/<[^>]*>?/gm, '');
-          }
-        });
-      }
-      
-      next();
-    }
-  ];
+const deepSanitize = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return sanitize(obj);
+  }
+  
+  return Object.keys(obj).reduce((acc: any, key) => {
+    acc[sanitize(key)] = deepSanitize(obj[key]);
+    return acc;
+  }, Array.isArray(obj) ? [] : {});
 };
+
+export const sanitizeMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.body) req.body = deepSanitize(req.body);
+    if (req.query) req.query = deepSanitize(req.query);
+    if (req.params) req.params = deepSanitize(req.params);
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Sanitization failed' });
+  }
+};
+
+export { sanitize };

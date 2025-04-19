@@ -36,7 +36,7 @@ const config: Config = {
     refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || '7d'
   },
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+    url: process.env.REDIS_URL || 'redis://default:SECgeJUcRtERdRuPt2WiL05gr5YHkKEH@redis-10964.c38599.ap-seast-3-mz.ec2.cloud.rlrcp.com:10964'
   }
 };
 

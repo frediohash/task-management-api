@@ -10,7 +10,9 @@ const jwt_1 = require("../config/jwt");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const register = async (req, res, next) => {
     try {
+        console.log('🔐 [REGISTER] request received:', req.body);
         const { username, email, password, role } = req.body;
+        console.log('Registering:', req.body);
         const existingUser = await user_model_1.UserModel.findOne({ email });
         if (existingUser) {
             throw new ApiError_1.ApiError(400, 'Email already in use');

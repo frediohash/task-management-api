@@ -6,9 +6,9 @@ import { errorHandler } from './utils/ApiError';
 import { redisClient } from './config/redis';
 import taskRoutes from './routes/task.routes';
 import authRoutes from './routes/auth.routes';
-import { sanitize } from './middleware/sanitize';
+import { sanitizeMiddleware } from './middleware/sanitize';
 import { config } from './config/config';
-
+import { corsMiddleware } from './middleware/cors';
 
 
 const app = express();
@@ -32,7 +32,16 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(...sanitize());
+app.use(sanitizeMiddleware);
+
+// Add before routes
+app.use((req, res, next) => {
+  req.setTimeout(10000); // 10 seconds
+  res.setTimeout(10000);
+  next();
+});
+
+app.use(corsMiddleware);
 
 // Routes
 app.use('/api/v1/tasks', taskRoutes);

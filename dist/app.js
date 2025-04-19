@@ -13,6 +13,7 @@ const task_routes_1 = __importDefault(require("./routes/task.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const sanitize_1 = require("./middleware/sanitize");
 const config_1 = require("./config/config");
+const cors_2 = require("./middleware/cors");
 const app = (0, express_1.default)();
 // Connect to MongoDB
 mongoose_1.default.connect(config_1.config.mongo.url)
@@ -30,7 +31,14 @@ app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use(...(0, sanitize_1.sanitize)());
+app.use(sanitize_1.sanitizeMiddleware);
+// Add before routes
+app.use((req, res, next) => {
+    req.setTimeout(10000); // 10 seconds
+    res.setTimeout(10000);
+    next();
+});
+app.use(cors_2.corsMiddleware);
 // Routes
 app.use('/api/v1/tasks', task_routes_1.default);
 app.use('/api/v1/auth', auth_routes_1.default);

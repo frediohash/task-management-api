@@ -6,7 +6,10 @@ import bcrypt from 'bcryptjs';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('🔐 [REGISTER] request received:', req.body);
     const { username, email, password, role } = req.body;
+    console.log('Registering:', req.body);
+
 
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
